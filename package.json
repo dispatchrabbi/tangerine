@@ -10,7 +10,12 @@
     "type": "git",
     "url": "https://github.com/dispatchrabbi/tangerine.git"
   },
-  "author": "dispatchrabbi",
+  "author": "dispatchrabbi (http://github.com/dispatchrabbi)",
+  "contributors": [
+    "Hobbes (http://github.com/hobbular)",
+    "Chant (http://github.com/chant)",
+    "Abel (http://github.com/datAbel)"
+  ],
   "license": "BSD",
   "dependencies": {
     "primus": "~1.5.1",
