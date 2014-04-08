@@ -12,10 +12,9 @@ CREATE  TABLE IF NOT EXISTS `tangerine`.`carriers` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT ,
   `name` VARCHAR(255) NOT NULL ,
   `viable` TINYINT(1) NOT NULL ,
-  `pattern` VARCHAR(255) NOT NULL DEFAULT '' ,
+  `pattern` VARCHAR(255) NULL ,
   PRIMARY KEY (`id`) ,
-  UNIQUE INDEX `name_UNIQUE` (`name` ASC) ,
-  UNIQUE INDEX `id_UNIQUE` (`id` ASC) )
+  UNIQUE INDEX `name_UNIQUE` (`name` ASC) )
 ENGINE = InnoDB;
 
 
@@ -28,7 +27,6 @@ CREATE  TABLE IF NOT EXISTS `tangerine`.`teams` (
   `assignment` VARCHAR(255) NOT NULL DEFAULT '' ,
   `supervisor` INT UNSIGNED NULL ,
   PRIMARY KEY (`id`) ,
-  UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
   INDEX `team_supervisor_idx` (`supervisor` ASC) ,
   CONSTRAINT `team_supervisor`
     FOREIGN KEY (`supervisor` )
@@ -44,7 +42,7 @@ ENGINE = InnoDB;
 CREATE  TABLE IF NOT EXISTS `tangerine`.`pairs` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT ,
   `label` TEXT NOT NULL DEFAULT '' COMMENT 'label\\\'s format is still under consideration' ,
-  `team` INT UNSIGNED NOT NULL ,
+  `team` INT UNSIGNED ,
   PRIMARY KEY (`id`) ,
   UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
   INDEX `pair_team_idx` (`team` ASC) ,
@@ -64,7 +62,6 @@ CREATE  TABLE IF NOT EXISTS `tangerine`.`details` (
   `name` VARCHAR(255) NOT NULL ,
   `description` TEXT NOT NULL DEFAULT '' ,
   PRIMARY KEY (`id`) ,
-  UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
   UNIQUE INDEX `name_UNIQUE` (`name` ASC) )
 ENGINE = InnoDB;
 
@@ -74,9 +71,8 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `tangerine`.`permission_groups` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT ,
-  `canLogIn` TINYINT(1) NOT NULL DEFAULT 0 ,
+  `permissions` SET('canLogIn') NOT NULL DEFAULT '',
   PRIMARY KEY (`id`) ,
-  UNIQUE INDEX `id_UNIQUE` (`id` ASC) )
 ENGINE = InnoDB;
 
 
@@ -109,7 +105,6 @@ CREATE  TABLE IF NOT EXISTS `tangerine`.`ops` (
   `checkedOut` DATETIME NULL ,
   `permissions` INT UNSIGNED NOT NULL ,
   PRIMARY KEY (`id`) ,
-  UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
   UNIQUE INDEX `callsign_UNIQUE` (`callsign` ASC) ,
   INDEX `op_squad_idx` (`squad` ASC) ,
   INDEX `op_supervisor_idx` (`supervisor` ASC) ,
@@ -158,7 +153,6 @@ CREATE  TABLE IF NOT EXISTS `tangerine`.`squads` (
   `name` VARCHAR(255) NOT NULL ,
   `commander` INT UNSIGNED NULL ,
   PRIMARY KEY (`id`) ,
-  UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
   UNIQUE INDEX `name_UNIQUE` (`name` ASC) ,
   INDEX `squad_commander_idx` (`commander` ASC) ,
   CONSTRAINT `squad_commander`
@@ -177,7 +171,6 @@ CREATE  TABLE IF NOT EXISTS `tangerine`.`channels` (
   `number` VARCHAR(255) NOT NULL ,
   `purpose` VARCHAR(255) NOT NULL DEFAULT '' ,
   PRIMARY KEY (`id`) ,
-  UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
   UNIQUE INDEX `number_UNIQUE` (`number` ASC) )
 ENGINE = InnoDB;
 
@@ -193,7 +186,6 @@ CREATE  TABLE IF NOT EXISTS `tangerine`.`attendees` (
   `contactInfo` TEXT NOT NULL DEFAULT '' ,
   `notes` TEXT NOT NULL DEFAULT '' ,
   PRIMARY KEY (`id`) ,
-  UNIQUE INDEX `id_UNIQUE` (`id` ASC) )
 ENGINE = InnoDB;
 
 
@@ -205,44 +197,21 @@ CREATE  TABLE IF NOT EXISTS `tangerine`.`gear` (
   `serialNumber` VARCHAR(255) NOT NULL ,
   `type` VARCHAR(255) NOT NULL ,
   `owner` INT UNSIGNED NULL ,
-  `broken` TINYINT(1) NOT NULL DEFAULT 0 ,
+  `flags` SET('broken') NOT NULL DEFAULT '',
+  `channel` INT UNSIGNED NULL ,
   PRIMARY KEY (`id`) ,
-  UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
   UNIQUE INDEX `serialNumber_UNIQUE` (`serialNumber` ASC) ,
   INDEX `op_idx` (`owner` ASC) ,
   CONSTRAINT `gear_owner`
     FOREIGN KEY (`owner` )
     REFERENCES `tangerine`.`ops` (`id` )
-    ON DELETE SET NULL
+    ON DELETE RESTRICT
     ON UPDATE CASCADE)
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `tangerine`.`radios`
--- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `tangerine`.`radios` (
-  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT ,
-  `serialNumber` VARCHAR(255) NOT NULL ,
-  `type` VARCHAR(255) NOT NULL ,
-  `owner` INT UNSIGNED NULL ,
-  `channel` INT UNSIGNED NULL ,
-  `broken` TINYINT(1) NOT NULL DEFAULT 0 ,
-  PRIMARY KEY (`id`) ,
-  UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
-  UNIQUE INDEX `serialNumber_UNIQUE` (`serialNumber` ASC) ,
-  INDEX `radio_owner_idx` (`owner` ASC) ,
-  INDEX `radio_channel_idx` (`channel` ASC) ,
-  CONSTRAINT `radio_owner`
-    FOREIGN KEY (`owner` )
-    REFERENCES `tangerine`.`ops` (`id` )
-    ON DELETE SET NULL
-    ON UPDATE CASCADE,
-  CONSTRAINT `radio_channel`
-    FOREIGN KEY (`channel` )
+  CONSTRAINT `gear_channel`
+    FOREIGN KEY (`channel`)
     REFERENCES `tangerine`.`channels` (`id` )
-    ON DELETE CASCADE
-    ON UPDATE CASCADE)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
 ENGINE = InnoDB;
 
 
@@ -257,7 +226,7 @@ CREATE  TABLE IF NOT EXISTS `tangerine`.`gear_transactions` (
   `actor` INT UNSIGNED NOT NULL ,
   `target` INT UNSIGNED NULL ,
   PRIMARY KEY (`id`) ,
-  UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
+  INDEX `geart_timestamp` (`timestamp` ASC) ,
   INDEX `geart_gear_idx` (`gear` ASC) ,
   INDEX `geart_actor_idx` (`actor` ASC) ,
   INDEX `geart_target_idx` (`actor` ASC) ,
@@ -278,38 +247,6 @@ CREATE  TABLE IF NOT EXISTS `tangerine`.`gear_transactions` (
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
-
--- -----------------------------------------------------
--- Table `tangerine`.`radio_transactions`
--- -----------------------------------------------------
-CREATE  TABLE IF NOT EXISTS `tangerine`.`radio_transactions` (
-  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT ,
-  `radio` INT UNSIGNED NOT NULL ,
-  `timestamp` DATETIME NOT NULL ,
-  `type` VARCHAR(255) NOT NULL ,
-  `actor` INT UNSIGNED NOT NULL ,
-  `target` INT UNSIGNED NULL ,
-  PRIMARY KEY (`id`) ,
-  UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
-  INDEX `radio_transactions_radio_idx` (`radio` ASC) ,
-  INDEX `radio_transactions_actor_idx` (`actor` ASC) ,
-  INDEX `radio_transactions_target_idx` (`target` ASC) ,
-  CONSTRAINT `radio_transactions_radio`
-    FOREIGN KEY (`radio` )
-    REFERENCES `tangerine`.`radios` (`id` )
-    ON DELETE RESTRICT
-    ON UPDATE CASCADE,
-  CONSTRAINT `radio_transactions_actor`
-    FOREIGN KEY (`actor` )
-    REFERENCES `tangerine`.`ops` (`id` )
-    ON DELETE RESTRICT
-    ON UPDATE CASCADE,
-  CONSTRAINT `radio_transactions_target`
-    FOREIGN KEY (`target` )
-    REFERENCES `tangerine`.`ops` (`id` )
-    ON DELETE RESTRICT
-    ON UPDATE CASCADE)
-ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
@@ -332,7 +269,7 @@ CREATE  TABLE IF NOT EXISTS `tangerine`.`incident_reports` (
   `status` VARCHAR(255) NOT NULL DEFAULT 'unfinished' ,
   `changesNeeded` TEXT NOT NULL DEFAULT '' ,
   PRIMARY KEY (`id`) ,
-  UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
+  INDEX `incident_reports_submittedTime` (`sumbittedTime` ASC) ,
   INDEX `incident_reports_author_idx` (`author` ASC) ,
   INDEX `incident_reports_checker_idx` (`author` ASC) ,
   INDEX `incident_reports_acceptor_idx` (`acceptor` ASC) ,
@@ -365,12 +302,12 @@ CREATE  TABLE IF NOT EXISTS `tangerine`.`missing_person_reports` (
   `contactInfo` TEXT NOT NULL ,
   `reporter` INT UNSIGNED NOT NULL ,
   `reportedTime` DATETIME NOT NULL ,
-  `amber` TINYINT(1) NOT NULL DEFAULT 0 ,
+  `flags` SET('amber') DEFAULT '' ,
   `foundTime` DATETIME NULL ,
   `foundDescription` TEXT NULL ,
   `status` VARCHAR(255) NOT NULL DEFAULT 'open' ,
   PRIMARY KEY (`id`) ,
-  UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
+  INDEX `missing_person_reports_reportedTime` (`reportedTime` ASC) ,
   INDEX `missing_person_reports_reporter_idx` (`reporter` ASC) ,
   CONSTRAINT `missing_person_reports_reporter`
     FOREIGN KEY (`reporter` )
@@ -404,7 +341,6 @@ CREATE  TABLE IF NOT EXISTS `tangerine`.`offenders` (
   `report` INT UNSIGNED NOT NULL ,
   `offender` INT UNSIGNED NOT NULL ,
   PRIMARY KEY (`report`, `offender`) ,
-  INDEX `offenders_report_idx` (`report` ASC) ,
   INDEX `offenders_offender_idx` (`offender` ASC) ,
   CONSTRAINT `offenders_report`
     FOREIGN KEY (`report` )
@@ -426,7 +362,6 @@ CREATE  TABLE IF NOT EXISTS `tangerine`.`incident_ops` (
   `report` INT UNSIGNED NOT NULL ,
   `op` INT UNSIGNED NOT NULL ,
   PRIMARY KEY (`report`, `op`) ,
-  INDEX `incident_ops_report_idx` (`report` ASC) ,
   INDEX `incident_ops_op_idx` (`op` ASC) ,
   CONSTRAINT `incident_ops_report`
     FOREIGN KEY (`report` )
@@ -452,15 +387,14 @@ CREATE  TABLE IF NOT EXISTS `tangerine`.`log_entries` (
   `type` VARCHAR(255) NOT NULL ,
   `from` TEXT NOT NULL DEFAULT '' ,
   `to` TEXT NOT NULL DEFAULT '' ,
-  `channel` INT UNSIGNED NOT NULL ,
+  `channel` INT UNSIGNED NULL ,
   `op` INT UNSIGNED NULL ,
   `pair` INT UNSIGNED NULL ,
   `team` INT UNSIGNED NULL ,
   `detail` INT UNSIGNED NULL ,
   `availability` VARCHAR(255) NULL ,
-  `onShift` TINYINT(1) NULL ,
+--  `onShift` TINYINT(1) NULL , -- does not actually make sense yet
   PRIMARY KEY (`id`) ,
-  UNIQUE INDEX `id_UNIQUE` (`id` ASC) ,
   INDEX `log_entry_logger_idx` (`logger` ASC) ,
   INDEX `log_entry_channel_idx` (`channel` ASC) ,
   INDEX `log_entry_op_idx` (`op` ASC) ,
@@ -529,7 +463,6 @@ CREATE  TABLE IF NOT EXISTS `tangerine`.`victims` (
   `report` INT UNSIGNED NOT NULL ,
   `victim` INT UNSIGNED NOT NULL ,
   PRIMARY KEY (`report`, `victim`) ,
-  INDEX `offenders_report_idx` (`report` ASC) ,
   INDEX `offenders_offender_idx` (`victim` ASC) ,
   CONSTRAINT `victims_report`
     FOREIGN KEY (`report` )
@@ -551,7 +484,6 @@ CREATE  TABLE IF NOT EXISTS `tangerine`.`witnesses` (
   `report` INT UNSIGNED NOT NULL ,
   `witness` INT UNSIGNED NOT NULL ,
   PRIMARY KEY (`report`, `witness`) ,
-  INDEX `offenders_report_idx` (`report` ASC) ,
   INDEX `offenders_offender_idx` (`witness` ASC) ,
   CONSTRAINT `witnesses_report`
     FOREIGN KEY (`report` )
